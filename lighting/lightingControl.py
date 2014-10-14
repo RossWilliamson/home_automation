@@ -11,13 +11,14 @@ class sunData():
                  lat=34.213869,
                  lon =-118.161517,
                  elev = 480,
-                 twilight = "civil",
+                 twilight = "sensible",
                  horizon = None):
 
         self.logger = logging.getLogger("SunData")
         self.logger.setLevel(logging.DEBUG)
 
-        self.twilight_def = {"civil" : -6,
+        self.twilight_def = {"sensible" : -3,
+                             "civil" : -6,
                              "nautical" : -12,
                              "astronomical" : -18}
 
@@ -36,12 +37,11 @@ class sunData():
 
     def get_sunrise(self):
         self.meadows.date = ephem.now()
-        if self.get_sunpos
-            self.logger.debug("Sun is above horizon")
+        if self.sunup() is True:
             sunrise = self.meadows.previous_rising(ephem.Sun(), use_center=True)
         else:
-            self.logger.debug("Sun is below horizon")
-            return ephem.localtime(sunrise)
+            sunrise = self.meadoews.next_rising(ephem.Sun(), use_center=True)
+        return ephem.localtime(sunrise)
         
     def get_sunset(self):
         self.meadows.date = ephem.now()
@@ -169,22 +169,13 @@ class lightingZone():
             GPIO.output(self.pin, self.OFF)
             self.lights_on = False
 
-        elif (self.lights_on is True) and (current_time > self.stop_time):
-            GPIO.output(self.pin, self.OFF)
-            self.light_on = False
-            self.logger.debug("LIGHTS OFF")
-            
-        elif (self.lights_on is False) and (current_time > self.start_time):
-            GPIO.out(self.pin, self.OFF)
-            self.light_on = True
-            self.logger.debug("LIGHTS ON")
-
         elif (current_time > self.start_time) and (current_time < self.stop_time):
             GPIO.output(self.pin,self.ON)
             print "TURNING ON"
         else:
             GPIO.output(self.pin,self.OFF)
             print "TURNING OFF"
+        
 
 class lightingControl():
     def __init__(self,zones=None):
@@ -217,7 +208,7 @@ class lightingControl():
     def set_lights(self):
         for name,zone in self.zones.items():
             self.logger.debug(name)
-            zone.set_lights()
+            zone.update_times()
     
     def local_settings(self):
         # This is to setup the local profile
@@ -226,7 +217,8 @@ class lightingControl():
         # Path comes on at civil twilight, turns off at 11pm
         # All other zones are off
 
-        self.zones["PATH"].set_timer("Auto", dt.time(23,00,00))
+        #self.zones["PATH"].set_timer("Auto", dt.time(23,00,00))
+        self.zones["PATH"].set_timer("Auto", "Auto")
         self.zones["FRONT"].set_timer("Off")
         self.zones["SPARE"].set_timer("Off")
         self.zones["ALLEY"].set_timer("Off")
