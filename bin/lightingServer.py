@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import lightingControl as lc
+from home import lightingControl as lc
 import logging
 
 from twisted.protocols.basic import LineReceiver

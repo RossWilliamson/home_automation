@@ -42,7 +42,7 @@ class sunData():
         else:
             sunrise = self.meadoews.next_rising(ephem.Sun(), use_center=True)
         return ephem.localtime(sunrise)
-        
+
     def get_sunset(self):
         self.meadows.date = ephem.now()
         if self.sunup() is True:
@@ -52,7 +52,7 @@ class sunData():
         return ephem.localtime(sunset)
 
     def sunup(self):
-        # This calculates if the sun as above virtual horizon 
+        # This calculates if the sun as above virtual horizon
         # useful as we need to know if it's day or night
         self.meadows.date = ephem.now()
         sun = ephem.Sun(self.meadows)
@@ -70,15 +70,15 @@ class lightingZone():
 
         self.name = name
         self.pin = pin
-        GPIO.setup(self.pin, GPIO.OUT)        
-                
+        GPIO.setup(self.pin, GPIO.OUT)
+
         # Inputs are inverted as sinks current
         self.OFF = True
         self.ON = False
-        
-        self.modes = {"Auto" : 0, 
-                      "Timed" : 1, 
-                      "Manual" : 3, 
+
+        self.modes = {"Auto" : 0,
+                      "Timed" : 1,
+                      "Manual" : 3,
                       "On" : 4,
                       "Off" : 5}
 
@@ -88,14 +88,14 @@ class lightingZone():
         self.stop_time = None
         self.start_duration = None
         self.stop_duration = dt.timedelta(hours=2)
-        
+
         self.manual_on = dt.time(19,30,00)
         self.manual_off = dt.time(23,00,00)
 
         self.lights_on = False
         self.update_times()
 
-    def set_timer(self, 
+    def set_timer(self,
                   start = None,
                   stop = None):
         # Let's try a single function here
@@ -134,11 +134,11 @@ class lightingZone():
         if self.start_mode is self.modes["Auto"]:
             self.start_time = self.sundata.get_sunset()
         elif self.start_mode is self.modes["Manual"]:
-            self.start_time = dt.datetime.combine(dt.date.today(), 
+            self.start_time = dt.datetime.combine(dt.date.today(),
                                                   self.manual_on)
         elif self.start_mode is self.modes["Timed"]:
             self.start_time = dt.datetime.now() + self.start_duration
-            
+
         if self.stop_mode is self.modes["Auto"]:
             self.stop_time = self.sundata.get_sunrise()
         elif self.stop_mode is self.modes["Manual"]:
@@ -146,12 +146,12 @@ class lightingZone():
                                                  self.manual_off)
         elif self.stop_mode is self.modes["Timed"]:
             self.stop_time = self.start_time + self.stop_duration
-        
+
         # We need to do the sanity check and make sure the stop_time
         # is after the start_time - should only be an issue when
         # using manual mode
-        
-        t_delta = self.stop_time - self.start_time        
+
+        t_delta = self.stop_time - self.start_time
         if t_delta.total_seconds() < 0:
             self.stop_time = self.stop_time + dt.timedelta(days=1)
 
@@ -159,9 +159,9 @@ class lightingZone():
 
     def set_lights(self):
         current_time = dt.datetime.now()
-        print current_time
-        print self.start_time
-        print self.stop_time
+        print(current_time)
+        print(self.start_time)
+        print(self.stop_time)
         if self.start_mode is self.modes["On"]:
             GPIO.output(self.pin, self.ON)
             self.lights_on = True
@@ -171,11 +171,11 @@ class lightingZone():
 
         elif (current_time > self.start_time) and (current_time < self.stop_time):
             GPIO.output(self.pin,self.ON)
-            print "TURNING ON"
+            print("TURNING ON")
         else:
             GPIO.output(self.pin,self.OFF)
-            print "TURNING OFF"
-        
+            print("TURNING OFF")
+
 
 class lightingControl():
     def __init__(self,zones=None):
@@ -191,10 +191,10 @@ class lightingControl():
 
         if zones is None:
             # Dictionary is NAME: pin
-            zones = {"PATH" : 7,
-                     "FRONT" : 8,
-                     "SPARE" : 9,
-                     "ALLEY" : 11}
+            zones = {"PATH" : 2,
+                     "FRONT" : 3,
+                     "SPARE" : 4,
+                     "ALLEY" : 7}
 
         self.setup_zones(zones)
         self.local_settings()
@@ -209,7 +209,7 @@ class lightingControl():
         for name,zone in self.zones.items():
             self.logger.debug(name)
             zone.update_times()
-    
+
     def local_settings(self):
         # This is to setup the local profile
         # It should really be a config file but seen
@@ -217,10 +217,8 @@ class lightingControl():
         # Path comes on at civil twilight, turns off at 11pm
         # All other zones are off
 
-        #self.zones["PATH"].set_timer("Auto", dt.time(23,00,00))
-        self.zones["PATH"].set_timer("Auto", "Auto")
+        self.zones["PATH"].set_timer("Auto", dt.time(23,00,00))
+        #self.zones["PATH"].set_timer("Auto", "Auto")
         self.zones["FRONT"].set_timer("Off")
         self.zones["SPARE"].set_timer("Off")
         self.zones["ALLEY"].set_timer("Off")
-                                    
-        
